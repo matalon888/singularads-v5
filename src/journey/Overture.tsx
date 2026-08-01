@@ -1,20 +1,21 @@
 import { useEffect, useRef } from 'react'
 import { motion, useMotionValueEvent, useScroll, useTransform, type MotionValue } from 'motion/react'
-import { Logo } from '../components/Logo'
 import { Dim, EmailCapture, Stars } from '../components/ui'
 import { state } from '../world/store'
+import { useScrubber } from './useScrubber'
 
 /**
  * THE OVERTURE — the pinned opening.
  *
- * House lights down. The world plays full-bleed under a giant wordmark, then
- * collapses into a card at the centre of a dark room while the mark blurs away.
- * The logo and headline assemble out of nothing. Then the card floods back to
- * full-bleed, the lights come up to white, and two story beats fly past the
- * camera before the journey proper takes over.
+ * House lights down. The arrival film plays full-bleed under a giant wordmark,
+ * scrubbed by the scroll, then collapses into a card at the centre of a dark
+ * room while the mark blurs away. The logo and headline assemble out of
+ * nothing. The second film — convergence — floods out of that card to
+ * full-bleed as the lights come up to white, and two story beats fly past the
+ * camera before the live 3D world takes over for the journey.
  *
- * The "media" is the live WebGL world, not a video: it is ours, it never 404s,
- * and it means the opening and the journey are literally the same scene.
+ * Both clips are Seedance 2.0 generations vendored into `public/footage/`, so
+ * the hero can never 404 on someone else's CDN. See scripts/generate_footage.py.
  */
 
 /* Phase boundaries in section progress (0…1). */
@@ -23,96 +24,127 @@ const COLLAPSE_END = 0.32
 const ASSEMBLE_END = 0.48
 const HOLD_END = 0.56
 const EXPAND_END = 0.68
+/** Where the film hands over to the live world. */
+const HANDOFF = 0.9
 
-const EASE = [0.16, 1, 0.3, 1] as const
+const BASE = import.meta.env.BASE_URL
+
+type Rect = { top: number; left: number; width: number; height: number }
 
 /** Card geometry at the centre of the collapse, in CSS pixels. */
-function cardRect() {
+function cardRect(): Rect {
   const vw = window.innerWidth
   const vh = window.innerHeight
   const w = vw < 768 ? Math.min(vw * 0.6, 300) : Math.max(240, Math.min(vw * 0.28, 400))
   const h = w * (10 / 16)
+  return { top: (vh - h) / 2 - vh * 0.04, left: (vw - w) / 2, width: w, height: h }
+}
+
+function fullRect(): Rect {
+  return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight }
+}
+
+function lerpRect(a: Rect, b: Rect, t: number): Rect {
   return {
-    top: (vh - h) / 2 - vh * 0.04,
-    left: (vw - w) / 2,
-    right: (vw - w) / 2,
-    bottom: (vh + h) / 2 + vh * 0.04 > vh ? 0 : vh - ((vh - h) / 2 - vh * 0.04) - h,
+    top: a.top + (b.top - a.top) * t,
+    left: a.left + (b.left - a.left) * t,
+    width: a.width + (b.width - a.width) * t,
+    height: a.height + (b.height - a.height) * t,
   }
 }
 
+function place(el: HTMLElement | null, r: Rect, radius: number) {
+  if (!el) return
+  el.style.top = `${r.top}px`
+  el.style.left = `${r.left}px`
+  el.style.width = `${r.width}px`
+  el.style.height = `${r.height}px`
+  el.style.borderRadius = `${radius}px`
+}
+
+const smooth = (t: number) => t * t * (3 - 2 * t)
+
 export function Overture() {
   const ref = useRef<HTMLElement>(null)
+  const megaWrap = useRef<HTMLDivElement>(null)
+  const heroWrap = useRef<HTMLDivElement>(null)
+  const mark = useRef<HTMLDivElement>(null)
+  const megaVideo = useRef<HTMLVideoElement>(null)
+  const heroVideo = useRef<HTMLVideoElement>(null)
+
+  const scrubMega = useScrubber(megaVideo)
+  const scrubHero = useScrubber(heroVideo)
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end end'],
   })
 
-  /* ── the world frame: clip + scale, written straight to the DOM ─────────── */
   const applyFrame = (p: number) => {
-    const clip = document.getElementById('world-clip')
-    const scale = document.getElementById('world-scale')
-    const veil = document.getElementById('stage-veil')
-    if (!clip || !scale || !veil) return
+    const card = cardRect()
+    const full = fullRect()
 
-    // How closed the frame is: 0 = full bleed, 1 = card.
+    // How closed the first film is: 0 = full bleed, 1 = card.
     let closed = 0
     if (p >= MEGA_END && p < COLLAPSE_END) closed = (p - MEGA_END) / (COLLAPSE_END - MEGA_END)
-    else if (p >= COLLAPSE_END && p < HOLD_END) closed = 1
-    else if (p >= HOLD_END && p < EXPAND_END) closed = 1 - (p - HOLD_END) / (EXPAND_END - HOLD_END)
+    else if (p >= COLLAPSE_END) closed = 1
 
-    const e = closed * closed * (3 - 2 * closed)
-    const r = cardRect()
-    clip.style.clipPath = `inset(${r.top * e}px ${r.right * e}px ${r.bottom * e}px ${r.left * e}px round ${16 * e}px)`
-    scale.style.transform = `scale(${1 - e * 0.14})`
+    // How open the second film is: 0 = card, 1 = full bleed.
+    let open = 0
+    if (p >= HOLD_END && p < EXPAND_END) open = (p - HOLD_END) / (EXPAND_END - HOLD_END)
+    else if (p >= EXPAND_END) open = 1
 
-    // Our canvas is transparent, so a clipped frame alone would read as blocks
-    // floating in the dark rather than a lit panel. The card needs a surface.
-    clip.style.background = e > 0.001 ? `rgba(14,18,30,${e})` : 'transparent'
+    place(megaWrap.current, lerpRect(full, card, smooth(closed)), 16 * smooth(closed))
+    place(heroWrap.current, lerpRect(card, full, smooth(open)), 16 * (1 - smooth(open)))
 
-    // House lights: down for the reveal, up into the white world.
-    const lit = p <= HOLD_END ? 1 : Math.max(0, 1 - (p - HOLD_END) / (EXPAND_END - HOLD_END))
-    veil.style.background = '#05070c'
-    veil.style.opacity = String(lit)
-    document.documentElement.dataset.stage = lit > 0.5 ? 'dark' : 'light'
+    // Each film is scrubbed across the stretch it owns.
+    scrubMega(Math.min(1, p / MEGA_END))
+    scrubHero(Math.max(0, (p - HOLD_END) / (1 - HOLD_END)))
 
-    // Slow forward push through the field, easing off as the frame closes.
-    state.heroDolly = Math.min(1, p / MEGA_END) * (1 - e * 0.6)
+    // The wordmark is driven imperatively. Bound to motion values its opacity
+    // and filter silently stopped tracking (transform kept working), and a
+    // wordmark that never leaves sits on top of the whole story sequence.
+    const m = mark.current
+    if (m) {
+      const k = smooth(
+        Math.max(0, Math.min(1, (p - MEGA_END) / (COLLAPSE_END - MEGA_END))),
+      )
+      m.style.opacity = String(1 - k)
+      m.style.filter = `blur(${(24 * k).toFixed(2)}px)`
+      m.style.transform = `scale(${(1 - 0.45 * k).toFixed(4)})`
+    }
+
+    document.documentElement.dataset.stage = p < EXPAND_END - 0.06 ? 'dark' : 'light'
+    state.heroDolly = 0
     state.overture = p < 0.98
   }
 
   useMotionValueEvent(scrollYProgress, 'change', applyFrame)
 
   useEffect(() => {
-    // The event only fires on change, so the very first frame — the one every
+    // The event only fires on change, so the first frame — the one every
     // visitor lands on — has to be painted explicitly.
     applyFrame(scrollYProgress.get())
     const onResize = () => applyFrame(scrollYProgress.get())
     window.addEventListener('resize', onResize)
     return () => {
       window.removeEventListener('resize', onResize)
-      // Leave the page in its normal state if the overture ever unmounts.
-      const clip = document.getElementById('world-clip')
-      const scale = document.getElementById('world-scale')
-      const veil = document.getElementById('stage-veil')
-      if (clip) {
-        clip.style.clipPath = ''
-        clip.style.background = 'transparent'
-      }
-      if (scale) scale.style.transform = ''
-      if (veil) veil.style.opacity = '0'
       document.documentElement.dataset.stage = 'light'
-      state.heroDolly = 0
       state.overture = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  /* ── the giant wordmark ─────────────────────────────────────────────────── */
-  const markOpacity = useTransform(scrollYProgress, [0, MEGA_END, COLLAPSE_END], [1, 1, 0])
-  const markScale = useTransform(scrollYProgress, [MEGA_END, COLLAPSE_END], [1, 0.55])
-  const markBlur = useTransform(
+  /* ── the room, and the handoff to the live world ────────────────────────── */
+  const roomColor = useTransform(scrollYProgress, [HOLD_END, EXPAND_END], ['#05070c', '#ffffff'])
+  const roomOpacity = useTransform(scrollYProgress, [HANDOFF, 1], [1, 0])
+  const megaOpacity = useTransform(scrollYProgress, [HANDOFF, 1], [1, 0])
+  // The second film sits at the card position from the start, so it has to stay
+  // hidden until the first one has collapsed — otherwise it gives the reveal away.
+  const heroFilmOpacity = useTransform(
     scrollYProgress,
-    [MEGA_END, COLLAPSE_END],
-    ['blur(0px)', 'blur(24px)'],
+    [COLLAPSE_END - 0.05, COLLAPSE_END, HANDOFF, 1],
+    [0, 1, 1, 0],
   )
 
   /* ── the assembled hero ─────────────────────────────────────────────────── */
@@ -128,28 +160,72 @@ export function Overture() {
 
   const logoIn = assemble(COLLAPSE_END + 0.02, ASSEMBLE_END - 0.04)
   const titleIn = assemble(COLLAPSE_END + 0.05, ASSEMBLE_END)
-  // Quiets the world under the closing beats, then clears for the handoff.
-  const storyScrim = useTransform(
-    scrollYProgress,
-    [EXPAND_END - 0.02, EXPAND_END + 0.03, 0.97, 1],
-    [0, 0.72, 0.72, 0],
-  )
   const sideOpacity = useTransform(
     scrollYProgress,
     [COLLAPSE_END + 0.06, ASSEMBLE_END, HOLD_END, EXPAND_END - 0.02],
     [0, 1, 1, 0],
   )
 
+  // Quiets the film under the closing beats so the copy reads.
+  const storyScrim = useTransform(
+    scrollYProgress,
+    [EXPAND_END - 0.02, EXPAND_END + 0.03, 0.97, 1],
+    [0, 0.84, 0.84, 0],
+  )
+
   return (
     <section ref={ref} className="relative w-full" style={{ height: '520vh' }}>
       {/* The world camera starts travelling from here on. */}
-      <div data-chapter={0} className="absolute left-0 h-px w-px" style={{ top: '92%' }} />
+      <div data-chapter={0} className="absolute left-0 h-px w-px" style={{ top: '94%' }} />
 
       <div className="sticky top-0 h-screen w-full overflow-hidden">
-        {/* ── wordmark ─────────────────────────────────────────────────────── */}
+        {/* the room */}
         <motion.div
           aria-hidden
-          style={{ opacity: markOpacity, scale: markScale, filter: markBlur }}
+          style={{ background: roomColor, opacity: roomOpacity }}
+          className="absolute inset-0 z-0"
+        />
+
+        {/* ── film 1 · arrival ─────────────────────────────────────────────── */}
+        <motion.div
+          ref={megaWrap}
+          aria-hidden
+          style={{ opacity: megaOpacity }}
+          className="absolute z-[5] overflow-hidden bg-black/40"
+        >
+          <video
+            ref={megaVideo}
+            src={`${BASE}footage/arrival.mp4`}
+            poster={`${BASE}footage/arrival.jpg`}
+            muted
+            playsInline
+            preload="auto"
+            className="h-full w-full object-cover"
+          />
+        </motion.div>
+
+        {/* ── film 2 · convergence ─────────────────────────────────────────── */}
+        <motion.div
+          ref={heroWrap}
+          aria-hidden
+          style={{ opacity: heroFilmOpacity }}
+          className="absolute z-[6] overflow-hidden bg-black/40"
+        >
+          <video
+            ref={heroVideo}
+            src={`${BASE}footage/convergence.mp4`}
+            poster={`${BASE}footage/convergence.jpg`}
+            muted
+            playsInline
+            preload="auto"
+            className="h-full w-full object-cover"
+          />
+        </motion.div>
+
+        {/* ── wordmark ─────────────────────────────────────────────────────── */}
+        <div
+          ref={mark}
+          aria-hidden
           className="pointer-events-none absolute right-[clamp(20px,2.7vw,40px)] bottom-[clamp(24px,4vh,44px)] z-20 origin-bottom-right max-md:bottom-[132px]"
         >
           <span
@@ -162,56 +238,56 @@ export function Overture() {
           >
             singular
           </span>
-        </motion.div>
+        </div>
 
         {/* ── the assembled hero ───────────────────────────────────────────── */}
         {/* `md:contents` dissolves this wrapper on desktop so each child keeps
             its own absolute placement around the card; below md they stack. */}
         <div className="absolute inset-x-5 top-[calc(50%+min(60vw,300px)*0.3125+26px)] z-20 flex flex-col items-center gap-3 text-center md:contents">
-        <motion.div
-          style={{ opacity: logoIn.opacity, scale: logoIn.scale, filter: logoIn.filter }}
-          className="pointer-events-none absolute top-[calc(50%-4vh-min(28vw,400px)*0.3125-22px)] left-[calc(50%-min(28vw,400px)/2-56px)] z-20 max-md:static"
-        >
-          <span className="block h-[34px] w-[34px]">
-            <svg viewBox="0 0 34 34" aria-hidden>
-              <polygon points="17,10 25.6,15 17,20 8.4,15" fill="#5B8DEF" />
-              <polygon points="8.4,15 17,20 17,30 8.4,25" fill="#9B7BF0" />
-              <polygon points="17,20 25.6,15 25.6,25 17,30" fill="#F07BC8" />
-              <circle cx="17" cy="20" r="3.1" fill="#F0F1F3" />
-            </svg>
-          </span>
-        </motion.div>
-
-        <motion.h1
-          style={{ opacity: titleIn.opacity, scale: titleIn.scale, filter: titleIn.filter }}
-          className="display pointer-events-none absolute top-[calc(50%+4vh)] left-[calc(50%+min(28vw,400px)/2+clamp(16px,2vw,32px))] z-20 w-[clamp(220px,30vw,440px)] text-[clamp(28px,4.6vw,64px)] text-white max-md:static max-md:w-full max-md:text-[34px]"
-        >
-          The <Dim>singular</Dim> moment is now here.
-        </motion.h1>
-
-        <motion.p
-          style={{ opacity: sideOpacity }}
-          className="pointer-events-none absolute top-[calc(50%-4vh-min(28vw,400px)*0.3125-4px)] left-[clamp(20px,2.7vw,40px)] z-20 w-[clamp(220px,25.6vw,377px)] text-[14px] leading-[1.35] font-medium text-white/85 max-md:static max-md:w-full"
-        >
-          The AI-powered programmatic exchange. Premium inventory, creative
-          technology, and intelligent decisioning — unified in one platform for
-          publishers and advertisers.
-        </motion.p>
-
-        <motion.div
-          style={{ opacity: sideOpacity }}
-          className="absolute bottom-[clamp(24px,4vh,44px)] left-[clamp(20px,2.7vw,40px)] z-20 flex flex-col gap-4 max-md:static max-md:w-full max-md:items-center"
-        >
-          <div className="w-[min(520px,86vw)]">
-            <EmailCapture id="overture-email" />
-          </div>
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 max-md:justify-center">
-            <Stars />
-            <span className="text-[13px] text-white/75 max-md:text-[11px]">
-              54B+ impressions/day · 180+ countries · Zero resold inventory
+          <motion.div
+            style={{ opacity: logoIn.opacity, scale: logoIn.scale, filter: logoIn.filter }}
+            className="pointer-events-none absolute top-[calc(50%-4vh-min(28vw,400px)*0.3125-22px)] left-[calc(50%-min(28vw,400px)/2-56px)] z-20 max-md:static"
+          >
+            <span className="block h-[34px] w-[34px]">
+              <svg viewBox="0 0 34 34" aria-hidden>
+                <polygon points="17,10 25.6,15 17,20 8.4,15" fill="#5B8DEF" />
+                <polygon points="8.4,15 17,20 17,30 8.4,25" fill="#9B7BF0" />
+                <polygon points="17,20 25.6,15 25.6,25 17,30" fill="#F07BC8" />
+                <circle cx="17" cy="20" r="3.1" fill="#F0F1F3" />
+              </svg>
             </span>
-          </div>
-        </motion.div>
+          </motion.div>
+
+          <motion.h1
+            style={{ opacity: titleIn.opacity, scale: titleIn.scale, filter: titleIn.filter }}
+            className="display pointer-events-none absolute top-[calc(50%+4vh)] left-[calc(50%+min(28vw,400px)/2+clamp(16px,2vw,32px))] z-20 w-[clamp(220px,30vw,440px)] text-[clamp(28px,4.6vw,64px)] text-white max-md:static max-md:w-full max-md:text-[34px]"
+          >
+            The <Dim>singular</Dim> moment is now here.
+          </motion.h1>
+
+          <motion.p
+            style={{ opacity: sideOpacity }}
+            className="pointer-events-none absolute top-[calc(50%-4vh-min(28vw,400px)*0.3125-4px)] left-[clamp(20px,2.7vw,40px)] z-20 w-[clamp(220px,25.6vw,377px)] text-[14px] leading-[1.35] font-medium text-white/85 max-md:static max-md:w-full"
+          >
+            The AI-powered programmatic exchange. Premium inventory, creative
+            technology, and intelligent decisioning — unified in one platform for
+            publishers and advertisers.
+          </motion.p>
+
+          <motion.div
+            style={{ opacity: sideOpacity }}
+            className="absolute bottom-[clamp(24px,4vh,44px)] left-[clamp(20px,2.7vw,40px)] z-20 flex flex-col gap-4 max-md:static max-md:w-full max-md:items-center"
+          >
+            <div className="w-[min(520px,86vw)]">
+              <EmailCapture id="overture-email" />
+            </div>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 max-md:justify-center">
+              <Stars />
+              <span className="text-[13px] text-white/75 max-md:text-[11px]">
+                54B+ impressions/day · 180+ countries · Zero resold inventory
+              </span>
+            </div>
+          </motion.div>
         </div>
 
         {/* ── story beats ──────────────────────────────────────────────────── */}
@@ -220,6 +296,7 @@ export function Overture() {
           style={{ opacity: storyScrim }}
           className="pointer-events-none absolute inset-0 z-10 bg-white"
         />
+
         <Beat p={scrollYProgress} word="Attention." from={0.69} span={0.04} />
         <Bars p={scrollYProgress} from={0.775} />
         <Caption p={scrollYProgress} from={0.785} to={0.86}>
@@ -227,7 +304,7 @@ export function Overture() {
         </Caption>
 
         <Beat p={scrollYProgress} word="Singular." from={0.865} span={0.035} />
-        <Route p={scrollYProgress} from={0.90} />
+        <Route p={scrollYProgress} from={0.9} />
         <Caption p={scrollYProgress} from={0.93} to={0.999}>
           One exchange. One integration. One unified view.
         </Caption>

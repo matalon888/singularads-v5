@@ -114,10 +114,6 @@ export function World() {
 
   return (
     <>
-      {/* The stage veil. The overture brings the house lights down behind the
-          world, then back up to white as the journey begins. */}
-      <div id="stage-veil" className="pointer-events-none fixed inset-0 z-[1]" aria-hidden />
-
       {/* Two wrappers on purpose: the outer one is clipped to the card, the
           inner one scales. Clipping and scaling the same element would fight
           each other, and resizing the canvas itself every frame is far too
