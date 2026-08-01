@@ -1,0 +1,138 @@
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/instrument-sans';
+@import '@fontsource-variable/jetbrains-mono';
+@import 'tailwindcss';
+
+/* ── SOLID LIGHT — design tokens ─────────────────────────────────────────── */
+@theme {
+  --font-display: 'Bricolage Grotesque Variable', sans-serif;
+  --font-sans: 'Instrument Sans Variable', sans-serif;
+  --font-mono: 'JetBrains Mono Variable', monospace;
+
+  --color-ink: #0b0b12;
+  --color-body: #3a3d4a;
+  --color-bone: #f7f8fa;
+  --color-card: #fcfcfd;
+
+  --color-blue: #5b8def;
+  --color-violet: #9b7bf0;
+  --color-pink: #f07bc8;
+  --color-coral: #ff8a5b;
+
+  --shadow-solid: 0 24px 60px -20px rgba(11, 11, 18, 0.16);
+  --shadow-lift: 0 34px 80px -22px rgba(11, 11, 18, 0.24);
+  --shadow-pill: 0 10px 40px 5px rgba(194, 194, 194, 0.25);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: #fff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-synthesis-weight: none;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: clip;
+  }
+
+  ::selection {
+    background: #0b0b12;
+    color: #fff;
+  }
+}
+
+@layer components {
+  /* Headings — Bricolage, tight and heavy */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 700;
+    letter-spacing: -0.045em;
+    line-height: 0.98;
+  }
+
+  /* Mono labels */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  }
+
+  .lede {
+    font-size: 18px;
+    line-height: 1.62;
+    color: var(--color-body);
+    opacity: 0.8;
+    max-width: 560px;
+  }
+
+  /* Every surface lives in a perspective context */
+  .stage {
+    perspective: 1100px;
+    transform-style: preserve-3d;
+  }
+
+  .solid-card {
+    background: #fff;
+    border: 1px solid rgba(11, 11, 18, 0.08);
+    border-radius: 22px;
+    box-shadow: var(--shadow-solid);
+    transform-style: preserve-3d;
+    will-change: transform;
+  }
+}
+
+@layer utilities {
+  /* Infinite partner ticker */
+  @keyframes marquee {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  .marquee-track {
+    animation: marquee 34s linear infinite;
+  }
+
+  .marquee-host:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* Ambient float used by the isometric illustrations */
+  @keyframes bob {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+
+  .bob {
+    animation: bob 4.5s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
