@@ -1,40 +1,89 @@
-import { ScrollProgress } from './components/ui'
+import { useEffect } from 'react'
+import Lenis from 'lenis'
+import { World } from './world/World'
+import { Hud, TravelCue, TravelProgress } from './components/Hud'
 import { Nav } from './sections/Nav'
-import { Hero } from './sections/Hero'
-import { Marquee } from './sections/Marquee'
-import { Problem } from './sections/Problem'
-import { Advertisers } from './sections/Advertisers'
-import { Publishers } from './sections/Publishers'
-import { Formats } from './sections/Formats'
-import { Technology } from './sections/Technology'
-import { Results } from './sections/Results'
-import { Manifesto } from './sections/Manifesto'
-import { Company } from './sections/Company'
-import { Resources } from './sections/Resources'
-import { GetStarted } from './sections/GetStarted'
-import { ClosingCTA } from './sections/ClosingCTA'
 import { Footer } from './sections/Footer'
+import {
+  Arrival,
+  TheArchive,
+  TheAttentionField,
+  TheExchange,
+  TheFold,
+  TheFormatRoom,
+  TheFoundry,
+  TheGateway,
+  TheQuiet,
+  TheSingularPoint,
+  TheStack,
+  TheWaterfall,
+  Ticker,
+} from './journey/content'
+
+/** Smooth, weighted scroll — travel through the world should have inertia. */
+function useSmoothScroll() {
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const lenis = new Lenis({ duration: 1.15, smoothWheel: true, wheelMultiplier: 0.9 })
+    // Exposed so the QA harness (and anything else that needs to drive the page
+    // programmatically) can move the scroller Lenis owns.
+    ;(window as unknown as { __lenis?: Lenis }).__lenis = lenis
+    let raf = 0
+    const loop = (t: number) => {
+      lenis.raf(t)
+      raf = requestAnimationFrame(loop)
+    }
+    raf = requestAnimationFrame(loop)
+
+    // Anchor links must still work with a hijacked scroller.
+    const onClick = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement)?.closest?.('a[href^="#"]')
+      if (!a) return
+      const href = a.getAttribute('href')!
+      if (href.length < 2) return
+      const el = document.querySelector(href)
+      if (!el) return
+      e.preventDefault()
+      lenis.scrollTo(el as HTMLElement, { offset: -60 })
+    }
+    document.addEventListener('click', onClick)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      document.removeEventListener('click', onClick)
+      delete (window as unknown as { __lenis?: Lenis }).__lenis
+      lenis.destroy()
+    }
+  }, [])
+}
 
 export default function App() {
+  useSmoothScroll()
+
   return (
     <>
-      <ScrollProgress />
+      <World />
+      <TravelProgress />
+      <Hud />
+      <TravelCue />
       <Nav />
-      <main>
-        <Hero />
-        <Marquee />
-        <Problem />
-        <Advertisers />
-        <Publishers />
-        <Formats />
-        <Technology />
-        <Results />
-        <Manifesto />
-        <Company />
-        <Resources />
-        <GetStarted />
-        <ClosingCTA />
+
+      <main className="relative z-10">
+        <Arrival />
+        <Ticker />
+        <TheFold />
+        <TheWaterfall />
+        <TheFoundry />
+        <TheFormatRoom />
+        <TheExchange />
+        <TheStack />
+        <TheAttentionField />
+        <TheQuiet />
+        <TheArchive />
+        <TheGateway />
+        <TheSingularPoint />
       </main>
+
       <Footer />
     </>
   )
