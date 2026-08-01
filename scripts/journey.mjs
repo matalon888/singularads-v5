@@ -56,6 +56,9 @@ const fail = (m) => {
 
 console.log(`\nTravelling ${anchors.length} chapters\n`)
 
+// Zero anchors means the app never mounted — that is a failure, not a clean run.
+if (anchors.length < 12) fail(`only ${anchors.length} chapter anchors found (expected 12)`)
+
 for (const { i, y } of anchors) {
   await page.evaluate((yy) => {
     const l = window.__lenis
