@@ -10,13 +10,25 @@ import { onChapter, state } from '../world/store'
  */
 export function Hud() {
   const [chapter, setChapter] = useState(0)
+  const [overture, setOverture] = useState(true)
+
   useEffect(() => {
     const off = onChapter(setChapter)
-    return () => void off()
+    const onScroll = () => setOverture((v) => (v === state.overture ? v : state.overture))
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      off()
+      window.removeEventListener('scroll', onScroll)
+    }
   }, [])
 
   return (
-    <div className="pointer-events-none fixed inset-y-0 left-0 z-40 hidden items-center pl-7 lg:flex">
+    <div
+      className={`pointer-events-none fixed inset-y-0 left-0 z-40 hidden items-center pl-7 transition-opacity duration-500 lg:flex ${
+        overture ? 'opacity-0' : 'opacity-100'
+      }`}
+    >
       <ol className="flex flex-col gap-[10px]">
         {CHAPTERS.map((c, i) => {
           const active = i === chapter
@@ -84,9 +96,9 @@ export function TravelCue() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, y: 10 }}
           transition={{ delay: 1.6, duration: 0.8 }}
-          className="pointer-events-none fixed inset-x-0 bottom-7 z-40 flex flex-col items-center gap-2"
+          className="pointer-events-none fixed inset-x-0 bottom-7 z-40 hidden flex-col items-center gap-2 md:flex"
         >
-          <span className="font-mono text-[10px] tracking-[0.22em] text-ink/45 uppercase">
+          <span className="travel-cue font-mono text-[10px] tracking-[0.22em] text-ink/45 uppercase">
             Scroll to travel
           </span>
           <motion.span

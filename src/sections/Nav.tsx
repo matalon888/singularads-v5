@@ -28,7 +28,7 @@ export function Nav() {
       initial={{ opacity: 0, y: -18 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
+      className={`site-nav fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
         scrolled
           ? 'border-b border-black/6 bg-white/85 backdrop-blur-xl'
           : 'border-b border-transparent'
@@ -52,14 +52,18 @@ export function Nav() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <InkButton
-            href="#contact"
-            size="sm"
-            className="hidden font-mono text-[11px] tracking-[0.14em] uppercase sm:inline-flex"
-          >
-            Get Started
-            <Arrow />
-          </InkButton>
+          {/* Wrapped: a `hidden` utility on InkButton loses to the `inline-flex`
+              in its own base classes, so the CTA never actually hid. */}
+          <span className="hidden sm:block">
+            <InkButton
+              href="#contact"
+              size="sm"
+              className="font-mono text-[11px] tracking-[0.14em] uppercase"
+            >
+              Get Started
+              <Arrow />
+            </InkButton>
+          </span>
 
           <button
             type="button"

@@ -16,7 +16,7 @@ const COLUMNS: [string, string[]][] = [
 
 export function Footer() {
   return (
-    <footer className="w-full border-t border-black/8 bg-bone px-6 py-16">
+    <footer className="relative z-10 w-full border-t border-black/8 bg-bone px-6 py-16">
       <div className="mx-auto w-full max-w-[1200px]">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_repeat(5,1fr)]">
           <div>

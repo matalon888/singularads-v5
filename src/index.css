@@ -123,6 +123,42 @@
   }
 }
 
+/* ── the overture plays with the house lights down ───────────────────────────
+   The nav is the only chrome on screen during the dark opening, so it inverts
+   with the stage rather than sitting there as unreadable ink on black. */
+html[data-stage='dark'] .site-nav {
+  border-color: transparent !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+html[data-stage='dark'] .site-nav .text-ink,
+html[data-stage='dark'] .site-nav .text-body,
+html[data-stage='dark'] .site-nav a,
+html[data-stage='dark'] .site-nav span {
+  color: #f0f1f3;
+}
+
+html[data-stage='dark'] .site-nav .bg-linear-to-b {
+  background: #f0f1f3;
+  color: #0c0d0f;
+  box-shadow: none;
+}
+
+html[data-stage='dark'] .site-nav .bg-linear-to-b span,
+html[data-stage='dark'] .site-nav .bg-linear-to-b svg {
+  color: #0c0d0f;
+}
+
+html[data-stage='dark'] .site-nav button {
+  border-color: rgba(240, 241, 243, 0.3);
+  background: rgba(240, 241, 243, 0.15);
+}
+
+html[data-stage='dark'] .travel-cue {
+  color: rgba(240, 241, 243, 0.7);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

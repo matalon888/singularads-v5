@@ -26,11 +26,34 @@ ON A GRADIENT, NO STOCK PHOTOGRAPHY, NO EMOJI ICONS, NO EFFECTS SCATTERED FOR TH
 SAKE. **RESTRAINT IS THE DIFFERENTIATOR — THE HEAVY MOMENTS ONLY LAND BECAUSE THE QUIET
 ONES ARE QUIET.**
 
+## THE OVERTURE (CHAPTER 01)
+
+THE OPENING IS **PINNED AND SCRUBBED**, STAGED LIKE A TITLE SEQUENCE:
+
+1. **HOUSE LIGHTS DOWN.** THE WORLD PLAYS FULL-BLEED IN A NEAR-BLACK ROOM UNDER A
+   GIANT LOWERCASE "singular" WORDMARK, BOTTOM-RIGHT. THE CAMERA PUSHES SLOWLY
+   THROUGH THE ARRIVAL FIELD.
+2. **COLLAPSE.** THE FULL-BLEED WORLD CLOSES INTO A SINGLE ROUNDED **CARD** AT THE
+   CENTRE OF THE DARK ROOM WHILE THE WORDMARK SCALES DOWN AND BLURS AWAY.
+3. **ASSEMBLE.** THE LOGO, THEN THE HEADLINE, EMERGE OUT OF NOTHING —
+   `scale 0.4 → 1`, `blur 12px → 0`, BACK-EASED — WITH THE DESCRIPTION LEFT AND THE
+   EMAIL CAPTURE BOTTOM-LEFT, RINGING THE CARD.
+4. **EXPAND, LIGHTS UP.** THE CARD FLOODS BACK TO FULL-BLEED, THE COPY BLURS OUT, AND
+   THE ROOM RESOLVES TO THE WHITE WORLD THE REST OF THE SITE LIVES IN.
+5. **BEATS.** TWO WORDS FLY PAST THE CAMERA (`translateZ -160 → 240`, BLUR IN AND OUT)
+   OVER A WHITE STORY SCRIM, EACH ANSWERED BY A DIAGRAM — ATTENTION BARS, THEN THE
+   SUPPLY PATH DRAWING ITSELF WITH ITS CHECKPOINTS — AND A CAPTION BOTTOM-LEFT.
+
+**THE MEDIA IS THE LIVE WORLD, NOT A VIDEO.** THE CARD IS A **FULL-SIZE WINDOW** INTO
+THE SCENE (CLIP-PATH ON AN OUTER WRAPPER, A SLIGHT SCALE ON AN INNER ONE) — NOT A
+SHRUNKEN COPY, WHICH CROPS INTO THE ARRIVAL SHELL'S HOLLOW CENTRE. NEVER RESIZE THE
+CANVAS ITSELF TO ANIMATE THIS; IT IS FAR TOO EXPENSIVE TO SCRUB.
+
 ## THE TWELVE CHAPTERS
 
 | # | CHAPTER | THE SET | THE EMOTIONAL MOVE |
 |---|---|---|---|
-| 01 | **ARRIVAL** | 170 tinted impression blocks drifting in an infinite white void | Wonder |
+| 01 | **ARRIVAL** | The pinned overture, above: 170 tinted impression blocks drifting in an infinite void | Wonder |
 | 02 | **THE FOLD** | A horizon plane. 18 impressions lit above it; 240 grey corpses sunk below, running off into fog. You are flown *underneath* | Dread |
 | 03 | **THE WATERFALL** | Six descending shelves, inventory tumbling down them, **draining of colour at every step it falls** | Loss |
 | 04 | **THE FOUNDRY** | One ink asset at the centre; fourteen format solids orbiting outward | Relief |
@@ -135,3 +158,4 @@ RUNS OFFLINE.
 | Exactly one dimensional word per heading | Whole headings in the effect |
 | Copy verbatim from the live site | Rewritten or "improved" claims |
 | Quiet chapters between loud ones | Constant spectacle |
+| The overture's media is the live world | Hotlinked or third-party video |

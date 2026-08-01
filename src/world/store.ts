@@ -20,6 +20,10 @@ export const state = {
   py: 0,
   /** Set when the visitor grabs the core. */
   burst: 0,
+  /** 0…1 forward push applied by the overture before the journey proper. */
+  heroDolly: 0,
+  /** True while the pinned overture owns the screen. */
+  overture: true,
   reduced: false,
 }
 

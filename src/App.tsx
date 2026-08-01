@@ -4,8 +4,8 @@ import { World } from './world/World'
 import { Hud, TravelCue, TravelProgress } from './components/Hud'
 import { Nav } from './sections/Nav'
 import { Footer } from './sections/Footer'
+import { Overture } from './journey/Overture'
 import {
-  Arrival,
   TheArchive,
   TheAttentionField,
   TheExchange,
@@ -69,7 +69,7 @@ export default function App() {
       <Nav />
 
       <main className="relative z-10">
-        <Arrival />
+        <Overture />
         <Ticker />
         <TheFold />
         <TheWaterfall />

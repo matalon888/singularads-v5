@@ -22,6 +22,7 @@ import {
 const _pos = new THREE.Vector3()
 const _look = new THREE.Vector3()
 const _cur = new THREE.Vector3()
+const _fwd = new THREE.Vector3()
 
 /** Drives the camera along the journey spline from the scroll store. */
 function Rig() {
@@ -36,6 +37,13 @@ function Rig() {
     // Pointer parallax — small, so it reads as a hand-held camera, not a toy.
     _pos.x += state.px * 2.4
     _pos.y += -state.py * 1.6
+
+    // The overture pushes the camera forward through the arrival field before
+    // the journey proper takes over.
+    if (state.heroDolly > 0) {
+      _fwd.copy(_look).sub(_pos).normalize()
+      _pos.addScaledVector(_fwd, state.heroDolly * 24)
+    }
 
     const k = state.reduced ? 1 : Math.min(1, delta * 4.2)
     camera.position.lerp(_pos, k)
@@ -105,11 +113,22 @@ export function World() {
   }, [])
 
   return (
-    <div
-      className="pointer-events-none fixed inset-0 z-0"
-      aria-hidden
-      data-world
-    >
+    <>
+      {/* The stage veil. The overture brings the house lights down behind the
+          world, then back up to white as the journey begins. */}
+      <div id="stage-veil" className="pointer-events-none fixed inset-0 z-[1]" aria-hidden />
+
+      {/* Two wrappers on purpose: the outer one is clipped to the card, the
+          inner one scales. Clipping and scaling the same element would fight
+          each other, and resizing the canvas itself every frame is far too
+          expensive to scrub. */}
+      <div
+        id="world-clip"
+        className="pointer-events-none fixed inset-0 z-[2]"
+        aria-hidden
+        data-world
+      >
+        <div id="world-scale" className="h-full w-full">
       <Canvas
         dpr={dpr.current}
         camera={{ position: [0, 1.5, 20], fov: 46, near: 0.5, far: 460 }}
@@ -153,6 +172,8 @@ export function World() {
         />
         <Rig />
       </Canvas>
-    </div>
+        </div>
+      </div>
+    </>
   )
 }

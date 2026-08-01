@@ -65,28 +65,43 @@ for (const vp of VIEWPORTS) {
   )
   for (const [f, ok] of fonts) (ok ? pass : fail)(`font ${f}`)
 
-  // Scroll the whole page so every reveal fires, then check for hidden content.
-  await page.evaluate(async () => {
-    const step = window.innerHeight * 0.75
-    for (let y = 0; y < document.body.scrollHeight; y += step) {
-      window.scrollTo(0, y)
-      await new Promise((r) => setTimeout(r, 90))
+  // Walk the page and record, for every text node, whether it was EVER visible.
+  // The overture stages its copy deliberately, so a single sample at one scroll
+  // position would flag intentionally-hidden text as broken. What matters is
+  // that nothing is permanently invisible.
+  const invisible = await page.evaluate(async () => {
+    const seen = new Map()
+    const sample = () => {
+      for (const el of document.querySelectorAll('h1,h2,h3,p,a,button,li,dd,dt')) {
+        const text = el.textContent.trim()
+        if (!text) continue
+        const s = getComputedStyle(el)
+        const hidden =
+          s.visibility === 'hidden' || s.display === 'none' || parseFloat(s.opacity) < 0.05
+        const key = el
+        if (!seen.has(key)) seen.set(key, { text: text.slice(0, 46), everShown: false })
+        if (!hidden) seen.get(key).everShown = true
+      }
     }
-    window.scrollTo(0, 0)
-    await new Promise((r) => setTimeout(r, 500))
-  })
 
-  const invisible = await page.evaluate(() => {
-    const out = []
-    for (const el of document.querySelectorAll('h1,h2,h3,p,a,button,li,dd,dt')) {
-      const s = getComputedStyle(el)
-      if (s.visibility === 'hidden' || s.display === 'none') continue
-      if (parseFloat(s.opacity) < 0.05 && el.textContent.trim())
-        out.push(el.textContent.trim().slice(0, 46))
+    const step = window.innerHeight * 0.5
+    for (let y = 0; y < document.body.scrollHeight; y += step) {
+      const l = window.__lenis
+      if (l) l.scrollTo(y, { immediate: true })
+      else window.scrollTo(0, y)
+      await new Promise((r) => setTimeout(r, 110))
+      sample()
     }
-    return out
+    const l = window.__lenis
+    if (l) l.scrollTo(0, { immediate: true })
+    else window.scrollTo(0, 0)
+    await new Promise((r) => setTimeout(r, 400))
+
+    return [...seen.values()].filter((v) => !v.everShown).map((v) => v.text)
   })
-  invisible.length ? fail(`invisible text: ${invisible.slice(0, 4).join(' | ')}`) : pass('all text visible')
+  invisible.length
+    ? fail(`never-visible text: ${invisible.slice(0, 4).join(' | ')}`)
+    : pass('all text visible at some point')
 
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,

@@ -39,59 +39,6 @@ import {
 
 const EASE = [0.16, 1, 0.3, 1] as const
 
-/* ════════════════════════════════════════════════════════════════════════════
-   00 · ARRIVAL
-   ════════════════════════════════════════════════════════════════════════════ */
-
-export function Arrival() {
-  return (
-    <Chapter chapter={0} id="top" className="pt-[8vh]">
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: EASE, delay: 0.2 }}
-        className="eyebrow"
-      >
-        The AI-powered programmatic exchange
-      </motion.div>
-
-      <h1 className="display mt-8 max-w-[1040px] text-[46px] text-ink sm:text-[74px] md:text-[104px]">
-        <FlipWords delay={0.4}>
-          {['The ', <Dim key="d">singular</Dim>, ' moment is now here.']}
-        </FlipWords>
-      </h1>
-
-      <motion.p
-        initial={{ opacity: 0, y: 24 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: EASE, delay: 1.05 }}
-        className="lede mt-8"
-      >
-        The AI-powered programmatic exchange. Premium inventory, creative
-        technology, and intelligent decisioning — unified in one platform for
-        publishers and advertisers.
-      </motion.p>
-
-      <motion.div
-        initial={{ opacity: 0, y: 26 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.9, ease: EASE, delay: 1.2 }}
-        className="mt-9 flex w-full flex-col items-center gap-5"
-      >
-        <EmailCapture id="hero-email" />
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2">
-          <Stars />
-          <span className="text-[13px] font-medium text-body">54B+ impressions/day</span>
-          <span className="h-3 w-px bg-black/12" />
-          <span className="text-[13px] text-body opacity-70">180+ countries</span>
-          <span className="h-3 w-px bg-black/12" />
-          <span className="text-[13px] text-body opacity-70">Zero resold inventory</span>
-        </div>
-      </motion.div>
-    </Chapter>
-  )
-}
-
 /* ── partner ticker ───────────────────────────────────────────────────────── */
 
 const PARTNERS = ['THE TRADE DESK', 'DV360', 'xandr', 'amazon', 'Yahoo', 'OpenX']
